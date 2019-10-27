@@ -187,14 +187,23 @@ class YahooBackupScraper:
         raw = self._load_json_url(url + "/raw")
 
         data = formatted['ygData']
-        data['rawEmail'] = raw['ygData']['rawEmail']
+        # probably a bad hack, but when a message is unavailable, ygData is valid, 
+        # but rawEmail throws a KeyError, we simply return the string "null" so the 
+        # error can be handled better below.
+        try:
+            data['rawEmail'] = raw['ygData']['rawEmail']
+        except KeyError:
+            data['rawEmail'] = "null"
 
         try:
             return self._massage_message(data)
         except:
             import pprint
             eprint("Failed to process message:\n%s" % (pprint.pformat(data)))
-            raise
+            # The original code raised an error and booted out, we now just assume the message does not 
+            # exist. If the message does actually exist at a later time, we just broke the archive.
+            #raise
+            return None
 
     def open_tab(self):
         if platform.system() == 'Darwin':
